@@ -1,0 +1,182 @@
+---
+title: "Problem Set 2"
+author: "Jianqiu Bei, Xinru Huang, Jingyi Liu, Zhirui Wang"
+date: "June 25, 2016"
+output: pdf_document
+---
+##Problem 1
+```{r}
+suppressMessages(library(lmtest))
+suppressMessages(library(car))
+ts <- read.csv("D:/Dropbox/16summer/Macroeconometrics/Problem Set2/1.csv")
+```
+
+###i
+Estimate the dynamic version of Okun's law
+```{r}
+GDP <- ts[,3]
+L.GDP <- c(NA,GDP[-239])
+L2.GDP <- c(NA,L.GDP[-239])
+L3.GDP <- c(NA,L2.GDP[-239])
+arima(ts[,4],order = c(2,0,0),xreg =cbind(GDP,L.GDP,L2.GDP))
+```
+Although the magnitude of the coefficients are not the same as the paper, the sign of the coefficients are consistent with the paper.
+
+###ii
+```{r}
+arima(ts[-(2:3),4],order = c(2,0,0),xreg =cbind(GDP,L.GDP,L2.GDP)[-c(2:3),])$aic
+arima(ts[-(2:3),4],order = c(3,0,0),xreg =cbind(GDP,L.GDP,L2.GDP,L3.GDP)[-c(2:3),])$aic
+arima(ts[-(2:3),4],order = c(3,0,0),xreg =cbind(GDP,L.GDP,L2.GDP)[-c(2:3),])$aic
+arima(ts[-(2:3),4],order = c(2,0,0),xreg =cbind(GDP,L.GDP,L2.GDP,L3.GDP)[-c(2:3),])$aic
+arima(ts[-(2:3),4],order = c(1,0,0),xreg =cbind(GDP,L.GDP)[-c(2:3),])$aic
+arima(ts[-(2:3),4],order = c(2,0,0),xreg =cbind(GDP,L.GDP)[-c(2:3),])$aic
+arima(ts[-(2:3),4],order = c(1,0,0),xreg =cbind(GDP,L.GDP,L2.GDP)[-c(2:3),])$aic
+```
+The aic of the original model is the smallest. So the author chose the right model.
+
+###iii
+```{r}
+SSRp <- sum(arima(ts[,4],order = c(2,0,0),xreg =cbind(GDP,L.GDP,L2.GDP))$residuals[-(1:2)]^2)
+SSR1 <- sum(arima(ts[1:143,4],order = c(2,0,0),
+                  xreg =cbind(GDP,L.GDP,L2.GDP)[1:143,])$residuals[-(1:2)]^2)
+SSR2 <- sum(arima(ts[144:239,4],order = c(2,0,0),xreg =cbind(GDP,L.GDP,L2.GDP)[144:239,])$residuals^2)
+chow <- ((SSRp-SSR1-SSR2)/(SSR1+SSR2))*((239-2*6)/6)
+print(chow)
+qf(0.95,6,(239-6*2))
+```
+The chow test shows that the F-statistic is significant, so the structure is unstable over the pre-1984 and post-1984.
+
+###iv
+Estimate the difference version of Okun's law
+```{r}
+lm(ts[,4]~GDP)
+```
+
+Test stability
+```{r}
+D <- c(rep(0,143),rep(1,(239-143)))
+reg <- lm(ts[,4]~D+GDP*D)
+coeftest(reg)
+linearHypothesis(reg,c("D=0","D:GDP=0"))
+```
+Reject the null hypothesis. It is unstable over pre-1984 and post-1984, so we have to calculate the GDP growth rate separately.
+
+```{r}
+reg1 <- lm(ts[1:143,4]~GDP[1:143])
+reg2 <- lm(ts[144:239,4]~GDP[144:239])
+```
+pre-1984 GDP growth rate
+```{r}
+-reg1$coefficients[1]/reg1$coefficients[2]
+```
+post-1984 GDP growth rate
+```{r}
+-reg2$coefficients[1]/reg2$coefficients[2]
+```
+\newpage
+##Problem 2
+###ii
+```{r}
+suppressMessages(library(forecast))
+masim <- arima.sim(list(ma=c(-0.3,0.17)),n=200)
+acf(masim,8)$acf
+```
+Yes, it matches the theoretical prediction because the lag 1 and 2 are significant and similar to what we calculated, and all following lags are non-significant.
+
+```{r}
+auto.arima(masim)
+Box.test(auto.arima(masim)$residuals[1:8],type="Ljung-Box")
+```
+Based on AIC, the best model is not MA(2), and it has a non-significant Q-statistic, so it is a valid model.It is because the sampling error that we cannot fit a simulated model into its exactly original Data Generating Process.
+
+\newpage
+##Problem 4
+```{r}
+library(forecast)
+library(tseries)
+```
+###a
+```{r}
+ts1<- read.csv("D:/Dropbox/16summer/Macroeconometrics/Problem Set2/41.csv")
+adf.test(ts1[,2])
+```
+Non-stationary. We should allow auto.arima to do difference.
+```{r}
+auto.arima(ts1[,2],stationary=FALSE)
+Box.test(auto.arima(ts1[,2])$residuals,type="Ljung-Box")
+```
+The final model is ARIMA(2,1,1).
+
+###b
+```{r}
+ts2<- read.csv("D:/Dropbox/16summer/Macroeconometrics/Problem Set2/42.csv")
+adf.test(ts2[,2])
+```
+Non-stationary. We should allow auto.arima to do difference.
+```{r}
+auto.arima(ts2[,2],stationary=FALSE)
+Box.test(auto.arima(ts2[,2])$residuals,type="Ljung-Box")
+```
+The final model is ARIMA(3,1,0)
+
+###c
+```{r}
+ts3<- read.csv("D:/Dropbox/16summer/Macroeconometrics/Problem Set2/43.csv")
+adf.test(ts3[,2])
+```
+Non-stationary. We should allow auto.arima to do difference.
+```{r}
+auto.arima(ts3[,2],stationary=FALSE)
+Box.test(auto.arima(ts3[,2])$residuals,type="Ljung-Box")
+```
+The final model is ARIMA(0,2,1)
+
+##Problem 5
+```{r}
+library(forecast)
+ts<- read.csv("D:/Dropbox/16summer/Macroeconometrics/Problem Set2/ps2prob5_data.csv")
+```
+First let's find out what lag length is the best based on AIC.
+```{r}
+aic <- rep(NA,10)
+for(i in 1:10){
+  aic[i] <- arima(ts[,2],order = c(i,0,0),include.mean = 0)$aic
+}
+aic
+```
+Clearly AR(3) is the best based on AIC.
+```{r}
+arima(ts[,2],c(3,0,0),include.mean = 0)
+Box.test(arima(ts[,2],c(3,0,0),include.mean = 0)$residuals,type="Ljung-Box")
+```
+AR(3) is valid, but it is actually not the "true" model. In order to get the "true" model AR(8), we have to build our own information criterion.
+
+One way is to correct the parameter of penalty term of lag length in the AIC. We know that when there is no penalty(parameter=0), a higher lag length will always get a higher maximized log-likelihood. When in the AIC the parameter of penalty term is 2, we get the best lag length of 3. So there will definitely be some numbers between 0 and 2 that will make the 8th lag length the best model. So we use numerical computation method to compute the interval of all feasible parameters.
+```{r}
+loglik <- rep(NA,10)
+for(i in 1:10){
+  loglik[i] <- arima(ts[,2],order = c(i,0,0),include.mean = 0)$loglik
+}
+MyIC <- rep(NA,10)
+step <- seq(0,2,1e-5)
+parameter <- rep(NA,length(step))
+l <- c(1:10)
+for (j in 1:length(step)) {
+    MyIC<- -2*loglik/145+step[j]*l/145
+  if(MyIC[8]==min(MyIC)){
+    parameter [j] <- step[j]
+  }
+}
+min(subset(parameter,!is.na(parameter)))
+max(subset(parameter,!is.na(parameter)))
+```
+So here we get our own information criterion as following: 
+IC=-2$\times$loglikelihood/T+parameter$\times$laglength/T
+where parameter$\in$[0.0102,0.62735]
+
+
+```{r}
+arima(ts[,2],c(8,0,0),include.mean = 0)
+Box.test(arima(ts[,2],c(8,0,0),include.mean = 0)$residuals,type="Ljung-Box")
+```
+The "true" model AR(8) is valid.

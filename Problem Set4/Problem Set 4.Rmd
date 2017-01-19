@@ -1,0 +1,184 @@
+---
+title: "Problem Set 4"
+author: "Jianqiu Bei, Xinru Huang, Jingyi Liu, Zhirui Wang"
+date: "August 4, 2016"
+output: pdf_document
+---
+\newpage
+##2
+```{r}
+suppressMessages(library(vars))
+OILPRICE <- read.csv("D:/Dropbox/16summer/Macroeconometrics/Problem Set4/OILPRICE.csv")
+GDPDEF <- read.csv("D:/Dropbox/16summer/Macroeconometrics/Problem Set4/GDPDEF.csv")
+GDPC1 <- read.csv("D:/Dropbox/16summer/Macroeconometrics/Problem Set4/GDPC1.csv")
+OILPRICE[,2] <- OILPRICE[,2]/GDPDEF[,2]
+oilprice <- rep(NA,243)
+for (i in 1:243) {
+  oilprice[i] <- (OILPRICE[i+1,2]-OILPRICE[i,2])/OILPRICE[i,2]
+}
+oilprice <- (1+oilprice)^4-1
+rGDP <- GDPC1[,2]
+```
+
+###a
+```{r}
+y=cbind(oilprice,rGDP)
+VARselect(y)
+oil.var <- VAR(y,ic="aic")
+coef(oil.var)
+```
+
+###b
+```{r}
+plot(irf(VAR(y,ic="aic")))
+fevd(oil.var,n.ahead=10)
+```
+
+###c
+Provided the assumption that the oil prices shocks are exogenous, we find the effect of oil price shock on real GDP is negative but insignificant. Its variance decomposition explained by oil price is 0.018 and 0.021 respectively at forecast horizon 1 and 4. The oil price shock has significantly positive effects on itself, the effects last for one quarter and then converge to zero.
+
+From oirf graph, the impulse response of oil price in response to real GDP is zero at the shock, and also shows no evidence afterwards. The variance decomposition of oil price explained by real GDP is 0 and 0.00000668 at horizon 1 and 4. It indicates that real GDP has neither contemporaneous nor long-run effects on oil price, which is exogenous. The response of real GDP to itself, for sure, is significant and last for about one year.
+\newpage
+
+##4
+```{r}
+suppressMessages(library(vars))
+UNRATE <- read.csv("D:/Dropbox/16summer/Macroeconometrics/Problem Set4/UNRATE.csv")
+CPILFESL <- read.csv("D:/Dropbox/16summer/Macroeconometrics/Problem Set4/CPILFESL.csv")
+PPIACO <- read.csv("D:/Dropbox/16summer/Macroeconometrics/Problem Set4/PPIACO.csv")
+FEDFUNDS <- read.csv("D:/Dropbox/16summer/Macroeconometrics/Problem Set4/FEDFUNDS.csv")
+```
+
+###VAR(3) with 6 lags
+Try ordering:"FEDFUNDS","CPILFESL","UNRATE"
+```{r}
+y <- cbind(FEDFUNDS[,2],CPILFESL[,2],UNRATE[,2])
+colnames(y) <- c("FEDFUNDS","CPILFESL","UNRATE")
+policy.var <- VAR(y,p=6)
+amat <- diag(3)
+bmat <- diag(3)
+diag(bmat) <- NA
+amat[2,1] <- NA
+amat[3,1] <- NA
+amat[3,2] <- NA
+policy.svar <- SVAR(policy.var,Amat=amat,Bmat=bmat,lrtest = FALSE)
+plot(irf(policy.svar,impulse = "FEDFUNDS", response ="CPILFESL"))
+fevd(policy.svar)$CPILFESL
+```
+
+Try ordering:"FEDFUNDS","UNRATE","CPILFESL"
+```{r}
+y <- cbind(FEDFUNDS[,2],UNRATE[,2],CPILFESL[,2])
+colnames(y) <- c("FEDFUNDS","UNRATE","CPILFESL")
+policy.var <- VAR(y,p=6)
+amat <- diag(3)
+bmat <- diag(3)
+diag(bmat) <- NA
+amat[2,1] <- NA
+amat[3,1] <- NA
+amat[3,2] <- NA
+policy.svar <- SVAR(policy.var,Amat=amat,Bmat=bmat,lrtest = FALSE)
+plot(irf(policy.svar,impulse = "FEDFUNDS", response ="CPILFESL"))
+fevd(policy.svar)$CPILFESL
+```
+
+Try ordering:"CPILFESL","UNRATE","FEDFUNDS"
+```{r}
+y <- cbind(CPILFESL[,2],UNRATE[,2],FEDFUNDS[,2])
+colnames(y) <- c("CPILFESL","UNRATE","FEDFUNDS")
+policy.var <- VAR(y,p=6)
+amat <- diag(3)
+bmat <- diag(3)
+diag(bmat) <- NA
+amat[2,1] <- NA
+amat[3,1] <- NA
+amat[3,2] <- NA
+policy.svar <- SVAR(policy.var,Amat=amat,Bmat=bmat,lrtest = FALSE)
+plot(irf(policy.svar,impulse = "FEDFUNDS", response ="CPILFESL"))
+fevd(policy.svar)$CPILFESL
+```
+
+Try ordering:"UNRATE","CPILFESL","FEDFUNDS"
+```{r}
+y <- cbind(UNRATE[,2],CPILFESL[,2],FEDFUNDS[,2])
+colnames(y) <- c("UNRATE","CPILFESL","FEDFUNDS")
+policy.var <- VAR(y,p=6)
+amat <- diag(3)
+bmat <- diag(3)
+diag(bmat) <- NA
+amat[2,1] <- NA
+amat[3,1] <- NA
+amat[3,2] <- NA
+policy.svar <- SVAR(policy.var,Amat=amat,Bmat=bmat,lrtest = FALSE)
+plot(irf(policy.svar,impulse = "FEDFUNDS", response ="CPILFESL"))
+fevd(policy.svar)$CPILFESL
+```
+From the irf graph, we can see that no matter which restriction we use, the shock on federal fund rate has a positive effect on CPI. In other words, the "price puzzle" exist.
+
+For the VDC, the forecast error in CPI is mainly resulted from the shock on itself, and the effect decays from over 95% to over 70% in 10 periods. If we tread the federal funds rate as the most exogenous variable, the variance decomposition of annualized CPI growth indicates the Federal Funds Rate explains around 20% and unemployment rate only explains around 7% in 10 periods.  Their effects increasing over time. In other words, current shock on Federal Fund Rate and unemployment rate has relatively larger effects on the future CPI. If we treat the federal funds rate as the most endogenous variable, then both Federal Funds rate and unemployment rate explain around 10 in horizon 10, and their effects increases. The results are quite robust throughout different specifications.
+
+###VAR(4)
+Adding PPI to see whether there is still price puzzle
+
+Try ordering:"PPIACO","UNRATE","CPILFESL","FEDFUNDS"
+```{r}
+y.new <- cbind(PPIACO[,2],UNRATE[,2],CPILFESL[,2],FEDFUNDS[,2])
+colnames(y.new) <- c("PPIACO","UNRATE","CPILFESL","FEDFUNDS")
+policy.var.new <- VAR(y.new,p=6)
+amat.new <- diag(4)
+bmat.new <- diag(4)
+diag(bmat.new) <- NA
+amat.new[2,1] <- NA
+amat.new[3,1] <- NA
+amat.new[3,2] <- NA
+amat.new[4,1] <- NA
+amat.new[4,2] <- NA
+amat.new[4,3] <- NA
+policy.svar.new <- SVAR(policy.var.new,Amat=amat.new,Bmat=bmat.new,lrtest = FALSE)
+plot(irf(policy.svar.new,impulse = "FEDFUNDS", response ="CPILFESL"))
+fevd(policy.svar.new)$CPILFESL
+```
+
+Try ordering:"PPIACO","FEDFUNDS","UNRATE","CPILFESL"
+```{r}
+y.new <- cbind(PPIACO[,2],FEDFUNDS[,2],UNRATE[,2],CPILFESL[,2])
+colnames(y.new) <- c("PPIACO","FEDFUNDS","UNRATE","CPILFESL")
+policy.var.new <- VAR(y.new,p=6)
+amat.new <- diag(4)
+bmat.new <- diag(4)
+diag(bmat.new) <- NA
+amat.new[2,1] <- NA
+amat.new[3,1] <- NA
+amat.new[3,2] <- NA
+amat.new[4,1] <- NA
+amat.new[4,2] <- NA
+amat.new[4,3] <- NA
+policy.svar.new <- SVAR(policy.var.new,Amat=amat.new,Bmat=bmat.new,lrtest = FALSE)
+plot(irf(policy.svar.new,impulse = "FEDFUNDS", response ="CPILFESL"))
+fevd(policy.svar.new)$CPILFESL
+```
+
+Try ordering:"FEDFUNDS","PPIACO","UNRATE","CPILFESL"
+```{r}
+y.new <- cbind(FEDFUNDS[,2],PPIACO[,2],UNRATE[,2],CPILFESL[,2])
+colnames(y.new) <- c("FEDFUNDS","PPIACO","UNRATE","CPILFESL")
+policy.var.new <- VAR(y.new,p=6)
+amat.new <- diag(4)
+bmat.new <- diag(4)
+diag(bmat.new) <- NA
+amat.new[2,1] <- NA
+amat.new[3,1] <- NA
+amat.new[3,2] <- NA
+amat.new[4,1] <- NA
+amat.new[4,2] <- NA
+amat.new[4,3] <- NA
+policy.svar.new <- SVAR(policy.var.new,Amat=amat.new,Bmat=bmat.new,lrtest = FALSE)
+plot(irf(policy.svar.new,impulse = "FEDFUNDS", response ="CPILFESL"))
+fevd(policy.svar.new)$CPILFESL
+```
+The Impulse response of CPI to a positive shock in FFR is significantly positive in both short run and long run, throughout different specifications of ordering. If we put FFR prior to the CPI, the VDC of annualized CPI growth indicates that FFR helps explain 16% and PPI annual growth rate accounts for 10% percent at horizon 10. If we put CPI prior to the FFR, the VDC of annualized CPI growth indicates that FFR helps explain 7% and PPI annual growth rate still accounts for 10% percent at horizon 10. The results are quite robust throughout different specifications. So the price puzzle is still not solved.
+
+A plausible explanation for price puzzle appears to be that, during the 1960s and 1970s, the Federal Reserve responded to supply shocks by raising the federal funds rate but not by enough to prevent the aggregate price level from changing. Thus, a positive correlation between the federal funds rate and inflation arises.
+Even after including commodity prices in the VAR, the price puzzle is still unresolved. We guess there may be omitted variables and should add more variables such as the spread between long- and short-term interest rates, short- and long-term interest rates individually, oil prices, stock prices, unit labor costs, the index of leading economic indicators, and industrial capacity utilization. 
+
+

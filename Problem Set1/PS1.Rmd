@@ -1,0 +1,355 @@
+---
+title: "Problem Set 1"
+author: "Jianqiu Bei, Xinru Huang, Jingyi Liu, Zhirui Wang"
+date: "June 14, 2016"
+output: 
+  pdf_document: 
+    fig_height: 3.8
+---
+
+## Problem 2
+
+### (a)
+
+assign assumed values
+```{r}
+a <- 50
+b <- 1
+gama <- 1
+beta <- 0.5
+t <- c(1:100)
+d <- rep(NA,100)
+s <- rep(NA,100)
+p <- rep(NA,100)
+epsilon <- 1
+```
+
+start from the steady state
+```{r}
+p[1] <- (a-b)/(beta+gama)
+d[1] <- a-gama*p[1]
+s[1] <- d[1]
+```
+
+give the system a shock
+```{r}
+s[2] <- b+beta*p[1]+epsilon
+d[2] <- s[2]
+p[2] <- (a-d[2])/gama
+for(i in 3:100){
+  s[i] <- b+beta*p[i-1]
+  d[i] <- s[i]
+  p[i] <- (a-d[i])/gama
+}
+```
+
+calculate IM and IRF
+```{r}
+IM <- (p[2]-p[1])/epsilon
+print(IM)
+IRF <- rep(NA,100)
+for(i in 1:100){
+  IRF[i] <- (p[i+2]-p[1])/epsilon
+}
+print(round(IRF[1:30],5))
+```
+
+plot IRF
+```{r}
+plot(t,IRF,type = "l")
+```
+
+### (b)
+change the assumed value of beta=0.9
+
+IM and IRF are
+```{r, echo=FALSE}
+a <- 50
+b <- 1
+gama <- 1
+beta <- 0.9
+t <- c(1:100)
+d <- rep(NA,100)
+s <- rep(NA,100)
+p <- rep(NA,100)
+epsilon <- 1
+p[1] <- (a-b)/(beta+gama)
+d[1] <- a-gama*p[1]
+s[1] <- d[1]
+s[2] <- b+beta*p[1]+epsilon
+d[2] <- s[2]
+p[2] <- (a-d[2])/gama
+for(i in 3:100){
+  s[i] <- b+beta*p[i-1]
+  d[i] <- s[i]
+  p[i] <- (a-d[i])/gama
+}
+IM <- (p[2]-p[1])/epsilon
+print(IM)
+IRF <- rep(NA,100)
+for(i in 1:100){
+  IRF[i] <- (p[i+2]-p[1])/epsilon
+}
+print(round(IRF[1:60],5))
+plot(t,IRF,type = "l")
+```
+We can see that the value of IM is remained unchanged, but IRF converges slower. This because IM is determined only by gama, but IRF is determined by both gama and beta. And with a larger beta, the system needs a longer time to reach the steady state again.
+
+remain beta=0.5,but change the assumed value of gama=0.9
+
+IM and IRF are
+```{r, echo=FALSE}
+a <- 50
+b <- 1
+gama <- 1.5
+beta <- 0.5
+t <- c(1:100)
+d <- rep(NA,100)
+s <- rep(NA,100)
+p <- rep(NA,100)
+epsilon <- 1
+p[1] <- (a-b)/(beta+gama)
+d[1] <- a-gama*p[1]
+s[1] <- d[1]
+s[2] <- b+beta*p[1]+epsilon
+d[2] <- s[2]
+p[2] <- (a-d[2])/gama
+for(i in 3:100){
+  s[i] <- b+beta*p[i-1]
+  d[i] <- s[i]
+  p[i] <- (a-d[i])/gama
+}
+IM <- (p[2]-p[1])/epsilon
+print(IM)
+IRF <- rep(NA,100)
+for(i in 1:100){
+  IRF[i] <- (p[i+2]-p[1])/epsilon
+}
+print(round(IRF[1:60],5))
+plot(t,IRF,type = "l")
+```
+With a larger gama, IM is smaller,IRF converges to zero in a shorter period, and the system reaches the steady state in a shorter period.
+
+### (c)
+draw the cobweb plot
+```{r, include=FALSE}
+a <- 50
+b <- 1
+gama <- 1
+beta <- 0.9
+t <- c(1:100)
+d <- rep(NA,100)
+s <- rep(NA,100)
+p <- rep(NA,100)
+epsilon <- 1
+p[1] <- (a-b)/(beta+gama)
+d[1] <- a-gama*p[1]
+s[1] <- d[1]
+s[2] <- b+beta*p[1]+epsilon
+d[2] <- s[2]
+p[2] <- (a-d[2])/gama
+for(i in 3:100){
+  s[i] <- b+beta*p[i-1]
+  d[i] <- s[i]
+  p[i] <- (a-d[i])/gama
+}
+```
+
+```{r}
+cobweb.Q <- rep(NA,200)
+cobweb.P <- rep(NA,200)
+for(i in 1:100){
+  cobweb.Q[2*i-1] <- s[i]
+  cobweb.Q[2*i] <- d[i+1]
+  cobweb.P[2*i-1] <- p[i]
+  cobweb.P[2*i] <- p[i]
+}
+plot(cobweb.Q,cobweb.P,type="l",main = "Cobweb Dynamics")
+lines(d,p,col="blue")
+lines(s[-c(1,2)],p[-c(1,100)],col="red")
+legend("topright",c("cobweb","demand curve","supply curve"),
+       lty = c(1,1,1),pch = c(46,46,46),col = c("black","blue","red"))
+```
+
+It is called cobweb model because the dynamic process of "s>d>s>d>......" convergence is like a cobweb on the supply-demand graph. In addition, even when the system do not converge, the graph will still show a gradually bigger and bigger cobweb.
+
+
+## Problem 3
+
+```{r}
+sometime <- read.csv("D:/Dropbox/16summer/Macroeconometrics/Problem Set1/sometimeseriesdata.csv")
+suppressMessages(attach(sometime))
+acf(rebekah,10)
+pacf(rebekah,10)
+```
+MA(1),beta<0
+
+```{r}
+acf(daniel,10)
+pacf(daniel,10)
+```
+ARMA(1,1),a1>0
+
+```{r}
+acf(zhuoxiansheng,10)
+pacf(zhuoxiansheng,10)
+```
+AR(1),a1>0
+
+```{r}
+acf(sylvia,10)
+pacf(sylvia,10)
+```
+AR(1),a1<0
+
+```{r}
+acf(zhirui,10)
+pacf(zhirui,10)
+```
+MA(1),beta>0
+
+```{r}
+acf(hao,10)
+pacf(hao,10)
+```
+AR(1),a1>0
+
+```{r}
+acf(joanne,10)
+pacf(joanne,10)
+```
+white noise
+
+```{r}
+acf(sebastian,10)
+pacf(sebastian,10)
+```
+ARMA(1,1),a1>0
+
+## Problem 4
+
+This is the CBO longrun projection for medicare expenditure data made in June 2015. I am very interested in what time series model did CBO use to project medicare expenditure, so I choose this data.
+```{r}
+suppressMessages(library(forecast))
+library(tseries)
+medicare <- read.csv("D:/Dropbox/16summer/Macroeconometrics/Problem Set1/medicare.csv")
+```
+
+test whether the data is stationary
+```{r}
+adf.test(medicare$Net.Medicare)
+```
+Cannot reject null hypothesis. It is nonstationary.
+
+Take first difference and test again
+```{r}
+medi.d <- diff(medicare[,2])
+adf.test(medi.d)
+```
+It is now stationary.
+
+plot
+```{r}
+plot(2016:2090,medi.d,type = "l",xlab = "year",ylab = "d_medicare",
+     main = "CBO's Projection of Net Medicare Spending(differenced)",col="blue")
+```
+
+```{r}
+acf(medi.d)
+pacf(medi.d)
+```
+It's hard to tell by these graph what model it is. But it should be around 2nd-3rd lags.
+
+Use auto.arima() from forecast package. It will choose the best model based on AIC.
+```{r}
+auto.arima(medi.d,ic="aic")
+res.medi <- arima(medi.d,order = c(0,0,2))
+Box.test(res.medi$residuals,type="Ljung-Box")
+```
+MA(2) is the best model.
+
+## Problem 5
+
+```{r}
+library(forecast)
+library(tseries)
+library(car)
+GDPDEF <- read.csv("D:/Dropbox/16summer/Macroeconometrics/Problem Set1/GDPDEF-2.csv")
+UNRATE.2 <- read.csv("D:/Dropbox/16summer/Macroeconometrics/Problem Set1/UNRATE-2.csv")
+```
+
+Calculate the inflation and annualize it
+```{r}
+inflation <- rep(NA,239)
+for(i in 1:239){
+  inflation[i] <- ((1+(GDPDEF[i+1,2]-GDPDEF[i,2])/GDPDEF[i,2])^4)-1
+}
+inflation.date <- cbind.data.frame(GDPDEF$DATE[-1],inflation)
+colnames(inflation.date)[1] <- "DATE"
+inflation.date$DATE<- as.Date(inflation.date$DATE,format="%m/%d/%Y")
+```
+
+### (a)
+```{r}
+adf.test(inflation)
+acf(inflation)
+pacf(inflation)
+ar(inflation,aic = TRUE)$aic
+ar(inflation,aic = TRUE)
+Box.test(ar(inflation)$resid,type="Ljung-Box")
+```
+By acf and pacf we can see that the 1st, 2nd and 8th length of pacf is significant, and acf is a geometric decay. So it might be a AR(2) or AR(8). Using the ar() funtion and set aic=TRUE, it will select the best AR model based on AIC. And the result is AR(8) is the best. It is a very long lag length. Maybe it captures something in the longrun business cycles, or it might be experienceing an overfitting problem, the significance of the 8th lag may be caused by a random error. The best way to trade off between bias-variance is to use a cross validation set, maybe using bootstrap is a good idea. It remains further studies.
+
+### (b)
+Plot the inflation data
+```{r}
+plot(inflation.date$DATE,inflation.date$inflation,type="l")
+```
+We can see that the patterns before and after 1984 are kind of different. After 1984 the inflation is more "stable"" and seems like having a lower mean. It might be related to the new monetary policy during the Age of Reagan.So the structure change test is needed.
+
+Construct chow test
+```{r}
+ar.inflation1 <- ar(inflation[1:143],aic = FALSE,order.max = 8)
+ar.inflation2 <- ar(inflation[144:239],aic = FALSE,order.max = 8)
+SSRp <- sum(ar(inflation)$resid[-(1:8)]^2)
+SSR1 <- sum(ar.inflation1$resid[-(1:8)]^2)
+SSR2 <- sum(ar.inflation2$resid[-(1:8)]^2)
+chow <- ((SSRp-SSR1-SSR2)/(SSR1+SSR2))*((239-2*8)/8)
+print(chow)
+qf(0.95,8,(239-8*2))
+```
+Unfortunately the test is not significant. There is no actual structure change here.
+
+### (c)
+Regress the Phillips curve with lagged unemployment rate symmetrically. We think the model won't be bigger than 5th lag because otherwise the model will be too big. So we truncate the data for 5 periods so that every model will have the same obs number and then we can compare the AIC correctly.
+```{r}
+unrate <- UNRATE.2[,2]
+L.unrate <- c(unrate[-240])
+L2.unrate <- c(NA,L.unrate[-239])
+L3.unrate <- c(NA,L2.unrate[-239])
+L4.unrate <- c(NA,L3.unrate[-239])
+L5.unrate <- c(NA,L4.unrate[-239])
+arima(inflation[-(1:4)],order = c(1,0,0),xreg =cbind(L.unrate)[-c(1:4),])$aic
+arima(inflation[-(2:4)],order = c(2,0,0),xreg =cbind(L.unrate,L2.unrate)[-c(2:4),])$aic
+arima(inflation[-(3:4)],order = c(3,0,0),xreg =cbind(L.unrate,L2.unrate,L3.unrate)[-c(3:4),])$aic
+arima(inflation[-4],order = c(4,0,0),xreg =cbind(L.unrate,L2.unrate,L3.unrate,L4.unrate)[-4,])$aic
+arima(inflation,order = c(5,0,0),xreg =cbind(L.unrate,L2.unrate,L3.unrate,L4.unrate,L5.unrate))$aic
+```
+The best model is AR(3) with 3 lags of unemployment rate.
+```{r}
+arima(inflation,order = c(3,0,0),xreg =cbind(L.unrate,L2.unrate,L3.unrate))
+Box.test(arima(inflation,order = c(3,0,0),xreg =cbind(L.unrate,L2.unrate,L3.unrate))$resid,
+         type="Ljung-Box")
+```
+
+### (d)
+Test in each subsample whether the sum of the unemployment rate equals to zero
+```{r}
+philps1 <- arima(inflation[c(1:167)],order = c(3,0,0),
+                 xreg =cbind(L.unrate,L2.unrate,L3.unrate)[c(1:167),])
+linearHypothesis(philps1,c(0,0,0,0,1,1,1))
+philps2 <- arima(inflation[c(168:239)],order = c(3,0,0),
+                 xreg =cbind(L.unrate,L2.unrate,L3.unrate)[c(168:239),])
+linearHypothesis(philps2,c(0,0,0,0,1,1,1))
+```
+Yes. Both equals to zero. This means that the long run propensity of unemployment rate equals to zero. In the long run, the inflation will not depend on the unemployment rate any more. In both sample, the slopes of the Phillips curve become zero.

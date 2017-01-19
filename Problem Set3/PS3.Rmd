@@ -1,0 +1,334 @@
+---
+title: "Problem Set 3"
+author: "Jianqiu Bei, Xinru Huang, Jingyi Liu, Zhirui Wang"
+date: "July 11, 2016"
+output: 
+  pdf_document: 
+    fig_height: 3.5
+---
+
+##Q1
+```{r}
+suppressMessages(library(xlsx))
+suppressMessages(library(tseries))
+suppressMessages(library(forecast))
+data <- read.xlsx("D:/Dropbox/16summer/Macroeconometrics/Problem Set3/mystery data.xls",sheetName="Sheet1",header=T)
+data <- subset(data,complete.cases(data$ms1))
+```
+
+###For ms1
+```{r}
+adf.test(data$ms1)
+```
+It is non-stationary. We must difference it.
+
+```{r}
+dms1 <- diff(data$ms1)
+adf.test(dms1)
+```
+The difference series is now stationary.
+
+```{r}
+acf(dms1)
+pacf(dms1)
+```
+From the graph we think it might be AR(1) or ARMA(1,1).
+
+```{r}
+auto.arima(dms1,ic="aic")
+Box.test(auto.arima(dms1)$resid,type="Ljung-Box")
+```
+It is ARMA(1,1). And the Q-test shows it is valid.
+
+###For ms2
+```{r}
+adf.test(data$ms2)
+```
+It is non-stationary. We must difference it.
+
+```{r}
+dms2 <- diff(data$ms2)
+adf.test(dms2)
+```
+The difference series is now stationary.
+
+```{r}
+acf(dms2)
+pacf(dms2)
+```
+From the graph we think it might be AR(1), MA(1) or ARMA(1,1).
+
+```{r}
+auto.arima(dms2,ic="aic",trace = TRUE,allowmean = FALSE)
+arima(dms2,c(0,0,1),include.mean = FALSE)$aic
+arima(dms2,c(1,0,0),include.mean = FALSE)$aic
+arima(dms2,c(1,0,0),include.mean = FALSE)
+Box.test(arima(dms2,c(1,0,0),include.mean = FALSE)$resid,type="Ljung-Box")
+```
+There is a really weird bug in R here. When using auto.arima(), it reports that MA(1) is the best model. But when we do arima separately for MA(1) and AR(1), it turns out that AR(1) has a smaller AIC. This might be due to auto.arima() set the number observation to a smaller number to make sure that we use the same nobs to compare the AIC of higher order models. When not using the full sample, the MA(1) has a slightly smaller AIC. We should use the full sample, so the AR(1) is the best model. And the Q-test shows it is valid.
+
+###For ms3
+```{r}
+adf.test(data$ms3)
+```
+It is non-stationary. We must difference it.
+
+```{r}
+dms3 <- diff(data$ms3)
+adf.test(dms3)
+```
+The difference series is now stationary.
+
+```{r}
+acf(dms3)
+pacf(dms3)
+```
+From the graph we think it might be AR(1), MA(1) or ARMA(1,1).
+
+```{r}
+auto.arima(dms3,ic="aic")
+Box.test(auto.arima(dms3)$resid,type="Ljung-Box")
+```
+It is MA(1). And the Q-test shows it is valid.
+
+###For ms4
+```{r}
+adf.test(data$ms4)
+```
+It is non-stationary. We must difference it.
+
+```{r}
+dms4 <- diff(data$ms4)
+adf.test(dms4)
+```
+The difference series is now stationary.
+
+```{r}
+acf(dms4)
+pacf(dms4)
+```
+From the graph we think it might be AR(1) or AR(2).
+
+```{r}
+auto.arima(dms4,ic="aic")
+Box.test(auto.arima(dms4)$resid,type="Ljung-Box")
+```
+It is AR(2). And the Q-test shows it is valid.
+
+\newpage
+##Q2
+```{r}
+suppressMessages(library(lmtest))
+suppressMessages(library(orcutt))
+suppressMessages(library(car))
+```
+
+###For ms5
+Estimate these two models using entire sample
+```{r}
+arima(data$ms5)
+Box.test(arima(data$ms5)$resid,type="Ljung-Box")
+```
+
+```{r}
+plot(data$date,data$ms5)
+```
+We can see from the graph that the break point is at about 1974.
+
+Using loops to pinpoint a break point:
+```{r}
+a <- rep(NA,194)
+b <- rep(NA,194)
+for(i in 10:194){
+  D1 <- c(rep(0,i),rep(1,204-i))
+  if(coeftest(arima(data$ms5,xreg = D1))[2,4]<=0.05){
+    a[i] <- 1
+  }
+  if(Box.test(arima(data$ms5,xreg = D1)$resid,type="Ljung-Box")[3]>=0.70){
+    b[i] <- 1
+  }
+}
+intersect(which(a==1),which(b==1))
+data[intersect(which(a==1),which(b==1)),1]
+```
+The break point is at 1974.3.
+
+```{r}
+D1 <- c(rep(0,63),rep(1,204-63))
+coeftest(arima(data$ms5,xreg = D1))
+```
+The model parameter is unstable.
+
+The appropriately modified model:(D1 is a dummy variable that =0 if before 1974.3 and =1 after)
+```{r}
+arima(data$ms5,xreg = D1)
+Box.test(arima(data$ms5,xreg = D1)$resid,type="Ljung-Box")
+```
+The Q-test shows it is valid.
+
+###For ms6 and ms7
+Estimate these two models using entire sample
+```{r}
+arima(data$ms6,xreg = data$ms7)
+Box.test(arima(data$ms6,xreg = data$ms7)$resid,type="Ljung-Box")
+```
+
+```{r}
+plot(data$ms7,data$ms6)
+plot(data$date,data$ms7)
+plot(data$date,data$ms6)
+```
+From the first graph we can see that there is surely two different intercepts and slopes in the relationship of ms7 and ms6. And from the third graph we can see that the break point is at about 1984.
+
+Using loops to pinpoint a break point:
+```{r}
+a <- rep(NA,194)
+b <- rep(NA,194)
+for(i in 10:194){
+  D2<- c(rep(0,i),rep(1,204-i))
+  if(linearHypothesis(lm(data$ms6 ~ data$ms7+D2*data$ms7),c("D2=0","data$ms7:D2=0"))[2,6]<=0.05){
+    a[i] <- 1
+  }
+  if(Box.test(lm(data$ms6 ~ data$ms7+D2*data$ms7)$resid,type="Ljung-Box")[3]>=0.70){
+    b[i] <- 1
+  }
+}
+intersect(which(a==1),which(b==1))
+data[intersect(which(a==1),which(b==1)),1]
+```
+The break point is at 1985.1.
+
+```{r}
+D2<- c(rep(0,105),rep(1,204-105))
+linearHypothesis(lm(data$ms6 ~ data$ms7+D2*data$ms7),c("D2=0","data$ms7:D2=0"))
+```
+The model parameters are unstable.
+
+The appropriately modified model:(D2 is a dummy variable that =0 if before 1985.1 and =1 after)
+```{r}
+lm(data$ms6 ~ data$ms7+D2*data$ms7)
+Box.test(lm(data$ms6 ~ data$ms7+D2*data$ms7)$resid,type="Ljung-Box")
+```
+The Q-test shows it is valid.
+
+##Q3
+```{r}
+suppressMessages(library(car))
+Inflation <- read.csv("D:/Dropbox/16summer/Macroeconometrics/Problem Set3/CPILFESL.csv")
+GDPC1 <- read.csv("D:/Dropbox/16summer/Macroeconometrics/Problem Set3/GDPC1.csv")
+GDPPOT <- read.csv("D:/Dropbox/16summer/Macroeconometrics/Problem Set3/GDPPOT.csv")
+GAP <- 100*(log(GDPC1[,2])-log(GDPPOT[,2]))
+L.GAP <- c(NA,GAP[-208])
+L2.GAP <- c(NA,L.GAP[-208])
+L3.GAP <- c(NA,L2.GAP[-208])
+L4.GAP <- c(NA,L3.GAP[-208])
+```
+
+Full sample estimates:
+```{r}
+arima(Inflation[,2],order = c(4,0,0),xreg =cbind(L.GAP,L2.GAP,L3.GAP,L4.GAP))
+armax <- arima(Inflation[,2],order = c(4,0,0),xreg =cbind(L.GAP,L2.GAP,L3.GAP,L4.GAP))
+Box.test(armax$resid,type="Ljung-Box")
+```
+The Q-test shows it is valid.
+
+Using loops to pinpoint a break point:
+```{r}
+a <- rep(NA,207)
+b <- rep(NA,207)
+for(i in 10:197){
+  D <- c(rep(0,i),rep(1,208-i))
+  DLGAP <- D*L.GAP
+  DL2GAP <- D*L2.GAP
+  DL3GAP <- D*L3.GAP
+  DL4GAP <- D*L4.GAP
+  armax.test <- arima(Inflation[,2],order = c(4,0,0),
+                      xreg =cbind(D,L.GAP,L2.GAP,L3.GAP,L4.GAP,DLGAP,DL2GAP,DL3GAP,DL4GAP))
+  if(linearHypothesis(armax.test,c("DLGAP=0","DL2GAP=0","DL3GAP=0","DL4GAP=0"))[2,3]<=0.05){
+    a[i] <- 1
+  }
+  if(Box.test(armax.test$resid,type="Ljung-Box")[3]>=0.70){
+    b[i] <- 1
+  }
+}
+intersect(which(a==1),which(b==1))
+Inflation[intersect(which(a==1),which(b==1)),1]
+```
+The break point is at 1974.4.
+
+Test for the structural break:
+```{r}
+D <- c(rep(0,68),rep(1,208-68))
+DLGAP <- D*L.GAP
+DL2GAP <- D*L2.GAP
+DL3GAP <- D*L3.GAP
+DL4GAP <- D*L4.GAP
+armax.test <- arima(Inflation[,2],order = c(4,0,0),
+                    xreg =cbind(D,L.GAP,L2.GAP,L3.GAP,L4.GAP,DLGAP,DL2GAP,DL3GAP,DL4GAP))
+coeftest(armax.test)
+linearHypothesis(armax.test,c("DLGAP=0","DL2GAP=0","DL3GAP=0","DL4GAP=0"))
+```
+We can see that $gama_1$ is significant here, and all the $gama$'s are jointly significant.
+
+Test for the slope change:
+```{r}
+linearHypothesis(armax.test,c("DLGAP+DL2GAP+DL3GAP+DL4GAP=0"))
+```
+There is no change of slope.
+
+##Q4
+```{r}
+suppressMessages(library(vars))
+suppressMessages(library(lmtest))
+Inflation <- read.csv("D:/Dropbox/16summer/Macroeconometrics/Problem Set3/CPILFESL.csv")
+UNRATE <- read.csv("D:/Dropbox/16summer/Macroeconometrics/Problem Set3/UNRATE.csv")
+```
+
+VAR model:
+```{r}
+y <- cbind(Inflation[,2],UNRATE[,2])
+colnames(y)[2] <- "UNRATE"
+colnames(y)[1] <- "Inflation"
+VAR(y,p=5,type="const")
+```
+
+Granger Causality:
+```{r}
+grangertest(Inflation[,2],UNRATE[,2],order = 5)
+grangertest(UNRATE[,2],Inflation[,2],order = 5)
+```
+The result shows that unemployment rate Granger causes inflation, and inflation also Granger causes unemployment rate.
+
+There are some pitfalls. The Granger causality refers only to the effects of past values of one series on the current value of another series. Hence, Granger causality actually measures whether current and past values of one series help to forecast future values of another series. It is a kind of intertemporal correlation, but a very weak form of "causality".
+
+\newpage
+##Q5
+```{r}
+suppressMessages(library(BB))  
+fun <- function(x) {   
+  f <- numeric(length(x))                      
+  f[1] <-  x[1]+x[1]*x[2]+x[2]*x[3]-0.35*(1+x[1]^2+x[2]^2+x[3]^2) 
+  f[2] <-  x[2]+x[1]*x[3]-0.15*(1+x[1]^2+x[2]^2+x[3]^2) 
+  f[3] <-  x[3]-0.1*(1+x[1]^2+x[2]^2+x[3]^2) 
+  f   
+}   
+startx <- c(0.5,0.5,0.5)  
+result = dfsane(startx,fun,control=list(maxit=2500,trace = TRUE))  
+theta = result$par
+sigma2 = 1/(1+t(theta)%*%theta)
+theta
+sigma2
+```
+So 
+$\theta_{1}$=0.3408908; 
+$\theta_{2}$=0.1329545; 
+$\theta_{3}$=0.1147040; 
+$\sigma_{\varepsilon}^{2}$=0.8718089
+
+Let's check whether our results can get the right ACF's
+```{r}
+(theta[1]+theta[1]*theta[2]+theta[2]*theta[3])*sigma2
+(theta[2]+theta[1]*theta[3])*sigma2
+(theta[3])*sigma2
+```
+They are right.
